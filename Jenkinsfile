@@ -41,8 +41,8 @@ pipeline {
                     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                 '''
                 // set up buildx
-                // docker buildx create --use --name jenkins-builder || true
                 sh '''
+                    ### docker buildx create --use --name jenkins-builder || true
                     docker buildx inspect --bootstrap
                 '''
                 // Build and push the image
@@ -65,15 +65,15 @@ pipeline {
                 '''
  
                 // Log in to registry so the agent can pull the image
-                //sh '''
-                //    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
-                //'''
+                sh '''
+                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                '''
  
                 // Generate SBOM (JSON + SPDX) and vulnerability report
-                //sh '''
-                //    ${LOCAL_BIN}/syft -o json=sbom.json -o spdx-json=spdx.json ${IMAGE}
-                //    ${LOCAL_BIN}/grype -o json sbom:./sbom.json > grype-vulnerability-report.json
-                //'''
+                sh '''
+                    ${LOCAL_BIN}/syft -o json=sbom.json -o spdx-json=spdx.json ${IMAGE}
+                    ${LOCAL_BIN}/grype -o json sbom:./sbom.json > grype-vulnerability-report.json
+                '''
             } // end steps
         } // end stage
     } // end stages
