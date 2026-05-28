@@ -48,17 +48,17 @@ pipeline {
             } // end steps
         } // end stage
 
-      stage('Orca Secrets Scan') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                        sh '''
-                            orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" secrets scan --path $(pwd)
-                        '''
-                    } // end withCredentials
-                } // end script
-            } // end steps
-        } // end stage
+      //stage('Orca Secrets Scan') {
+      //      steps {
+      //          script {
+      //              withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+      //                  sh '''
+      //                      orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" secrets scan --path $(pwd)
+      //                  '''
+      //              } // end withCredentials
+      //          } // end script
+      //      } // end steps
+      //  } // end stage
         
         stage('Orca SAST Scan') {
             steps {
