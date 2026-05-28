@@ -48,7 +48,7 @@ pipeline {
                 // Build and push the image
                 sh '''
                     docker buildx build --push --tag ${IMAGE} .
-                ''''
+                '''
             } //end steps
         } // end stage
  
