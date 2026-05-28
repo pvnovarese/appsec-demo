@@ -66,7 +66,7 @@ pipeline {
  
                 // Log in to registry so the agent can pull the image
                 sh '''
-                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                 '''
  
                 // Generate SBOM (JSON + SPDX) and vulnerability report
