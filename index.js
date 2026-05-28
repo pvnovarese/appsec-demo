@@ -31,14 +31,7 @@ console.log(chalk.blue.bold('=== Hello World Application ==='));
 console.log(chalk.green('Hello, World!'));
 console.log(chalk.yellow('This message uses chalk for colors!'));
 
-// VULNERABILITY 3: SQL Injection (CWE-89)
-app.get('/user', (req, res) => {
-    const userId = req.query.id;
-    // Vulnerable: user input directly concatenated into SQL query
-    const query = `SELECT * FROM users WHERE id = '${userId}'`;
-    log(chalk.red('Executing query: ' + query));
-    res.json({ query: query });
-});
+// placeholder
 
 // VULNERABILITY 4: Command Injection (CWE-78)
 app.get('/ping', (req, res) => {
