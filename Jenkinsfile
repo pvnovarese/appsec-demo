@@ -41,8 +41,8 @@ pipeline {
                     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                 '''
                 // set up buildx
+                // docker buildx create --use --name jenkins-builder || true
                 sh '''
-                    docker buildx create --use --name jenkins-builder || true
                     docker buildx inspect --bootstrap
                 '''
                 // Build and push the image
@@ -60,8 +60,8 @@ pipeline {
                 // Install syft and grype
                 sh '''
                     mkdir -p ${LOCAL_BIN}
-                    curl -sSfL https://get.anchore.io/syft  | sudo sh -s -- -b ${LOCAL_BIN}
-                    curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b ${LOCAL_BIN}
+                    curl -sSfL https://get.anchore.io/syft  | sh -s -- -b ${LOCAL_BIN}
+                    curl -sSfL https://get.anchore.io/grype | sh -s -- -b ${LOCAL_BIN}
                 '''
  
                 // Log in to registry so the agent can pull the image
