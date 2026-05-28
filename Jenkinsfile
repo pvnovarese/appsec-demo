@@ -38,7 +38,7 @@ pipeline {
             steps {
                 // Log in to registry
                 sh '''
-                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                 '''
                 // set up buildx
                 sh '''
