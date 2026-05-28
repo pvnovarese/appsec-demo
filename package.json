@@ -1,0 +1,34 @@
+{
+  "name": "vulnerable-hello-world",
+  "version": "1.0.0",
+  "description": "Hello World app with intentional security vulnerabilities for SAST testing",
+  "type": "module",
+  "main": "vulnerable-hello-world.js",
+  "scripts": {
+    "start": "node vulnerable-hello-world.js",
+    "test": "echo \"No tests - this is intentionally vulnerable!\""
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "debug": "2.6.8",
+    "express": "4.16.0",
+    "lodash": "4.17.11",
+    "axios": "0.21.1",
+    "minimist": "1.2.5",
+    "node-fetch": "2.6.0",
+    "jsonwebtoken": "8.5.1",
+    "qs": "6.5.2"
+  },
+  "devDependencies": {
+    "node-notifier": "8.0.0",
+    "tar": "4.4.8"
+  },
+  "keywords": [
+    "security",
+    "sast",
+    "codeql",
+    "vulnerabilities"
+  ],
+  "author": "",
+  "license": "MIT"
+}
