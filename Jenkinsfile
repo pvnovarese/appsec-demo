@@ -26,11 +26,54 @@ pipeline {
         IMAGE = "${REGISTRY}/${REPOSITORY}:${TAG}"
         // might install some binaries here:
         LOCAL_BIN     = "${env.HOME}/.local/bin"
+        // Orca project key
+        PROJECT_KEY = "appsec-demo"
     } // end environment
  
  
     stages {
- 
+
+        stage('Orca IaC Security Scan') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            ### apt update && apt install -y curl
+                            ### if you need to install locally, set BINDIR="~/.local/bin"
+                            ### curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash
+                            orca-cli -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
+                        '''
+                    } // end withCredentials
+                } // end script
+            } // end steps
+        } // end stage
+
+        stage('Orca SAST Scan') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            orca-cli -p "${PROJECT_KEY}" --api-token "${TOKEN}" sast scan --path $(pwd)
+                        '''
+                    } // end withCredentials
+                } // end script
+            } // end steps
+        } // end stage
+
+        stage('Orca SCA Scan') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            orca-cli -p "${PROJECT_KEY}" --api-token "${TOKEN}" sca scan --path $(pwd)
+                        '''
+                    } // end withCredentials
+                } // end script
+            } // end steps
+        } // end stage
+        
+
+        
         // ------------------------------------------------------------------ //
         //  Stage 1 – BUILD                                                    //
         // ------------------------------------------------------------------ //
@@ -51,31 +94,43 @@ pipeline {
                 '''
             } //end steps
         } // end stage
- 
+
+        stage('Orca Container Image Security Scan') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                        sh '''
+                            orca-cli -p "${PROJECT_KEY}" --api-token "${TOKEN}" image scan ${IMAGE}
+                        '''
+                    } //end withCredentials
+                } // end script
+            } // end steps
+        } // end stage
+        
         // ------------------------------------------------------------------ //
         //  Stage 2 – IMAGE TEST                                               //
         // ------------------------------------------------------------------ //
-        stage('ImageTest') {
-            steps {
-                // Install syft and grype
-                sh '''
-                    mkdir -p ${LOCAL_BIN}
-                    curl -sSfL https://get.anchore.io/syft  | sh -s -- -b ${LOCAL_BIN}
-                    curl -sSfL https://get.anchore.io/grype | sh -s -- -b ${LOCAL_BIN}
-                '''
- 
-                // Log in to registry so the agent can pull the image
-                sh '''
-                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
-                '''
- 
-                // Generate SBOM (JSON + SPDX) and vulnerability report
-                sh '''
-                    ${LOCAL_BIN}/syft -o json=sbom.json -o spdx-json=spdx.json ${IMAGE}
-                    ${LOCAL_BIN}/grype -o json sbom:./sbom.json > grype-vulnerability-report.json
-                '''
-            } // end steps
-        } // end stage
+        //stage('ImageTest') {
+        //    steps {
+        //        // Install syft and grype
+        //        sh '''
+        //            mkdir -p ${LOCAL_BIN}
+        //            curl -sSfL https://get.anchore.io/syft  | sh -s -- -b ${LOCAL_BIN}
+        //            curl -sSfL https://get.anchore.io/grype | sh -s -- -b ${LOCAL_BIN}
+        //        '''
+        //
+        //        // Log in to registry so the agent can pull the image
+        //        sh '''
+        //            echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
+        //        '''
+        // 
+        //        // Generate SBOM (JSON + SPDX) and vulnerability report
+        //        sh '''
+        //            ${LOCAL_BIN}/syft -o json=sbom.json -o spdx-json=spdx.json ${IMAGE}
+        //            ${LOCAL_BIN}/grype -o json sbom:./sbom.json > grype-vulnerability-report.json
+        //        '''
+        //    } // end steps
+        //} // end stage
     } // end stages
  
     post {
