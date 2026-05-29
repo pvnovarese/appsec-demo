@@ -3,13 +3,10 @@ pipeline {
  
     /*
      * Prerequisites / Jenkins setup:
-     *   - A credential of type "Username with password" named 'ghcr-credentials'
-     *     with your GitHub username and a Personal Access Token (PAT) that has
-     *     write:packages scope.  This replaces the GitHub Actions GITHUB_TOKEN.
-     *   - Docker and Docker Buildx available on the Jenkins agent.
-     *   - syft and grype either pre-installed on the agent or installed at
-     *     runtime (this Jenkinsfile installs them at runtime, same as the
-     *     original workflow).
+     *   - A credential of type "Username with password" named 'docker-hub'
+     *     with your docker hub username and a Personal Access Token (PAT) that has
+     *     read/write permissions.
+     *   - Curl, Docker and Docker Buildx available on the Jenkins agent.
      */
  
     environment {
@@ -38,9 +35,9 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
-                            ### apt update && apt install -y curl
+                            # apt update && apt install -y curl
                             ### if you need to install locally, set BINDIR="~/.local/bin"
-                            ### curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash
+                            # curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash
                             orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
                         '''
                     } // end withCredentials
