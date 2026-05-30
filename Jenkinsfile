@@ -120,10 +120,10 @@ pipeline {
         
     } // end stages
  
-    post {
-        always {
-            // Clean up Docker login credentials from the agent
-            sh 'docker logout ${REGISTRY} || true'
-        } // end always
-    } //end post
+    //post {
+    //    always {
+    //        // Clean up Docker login credentials from the agent
+    //        sh 'docker logout ${REGISTRY} || true'
+    //    } // end always
+    //} //end post
 } //end pipeline
