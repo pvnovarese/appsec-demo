@@ -44,17 +44,20 @@ pipeline {
             } // end steps
         } // end stage
 
-      stage('Orca Secrets Scan') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                        sh '''
-                            ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" secrets scan --path $(pwd)
-                        '''
-                    } // end withCredentials
-                } // end script
-            } // end steps
-        } // end stage
+      //-----------------------------------------------------------------------------------
+      // Secret scan has a bug in it as of v1.106.3, I'll uncomment this when it's resolved
+      //-----------------------------------------------------------------------------------
+      //stage('Orca Secrets Scan') {
+      //      steps {
+      //          script {
+      //              withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+      //                  sh '''
+      //                      ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" secrets scan --path $(pwd)
+      //                  '''
+      //              } // end withCredentials
+      //          } // end script
+      //      } // end steps
+      //  } // end stage
         
         stage('Orca SAST Scan') {
             steps {
