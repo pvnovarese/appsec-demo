@@ -6,6 +6,7 @@ pipeline {
      *   - A credential of type "Username with password" named 'docker-hub'
      *     with your docker hub username and a Personal Access Token (PAT) that has
      *     read/write permissions.
+     *   - a credential ORCA_SECURITY_API_TOKEN with an api token
      *   - Curl, Docker and Docker Buildx available on the Jenkins agent.
      */
  
@@ -120,10 +121,10 @@ pipeline {
         
     } // end stages
  
-    //post {
-    //    always {
-    //        // Clean up Docker login credentials from the agent
-    //        sh 'docker logout ${REGISTRY} || true'
-    //    } // end always
-    //} //end post
+    post {
+        always {
+            // Clean up Docker login credentials from the agent
+            sh 'docker logout ${REGISTRY} || true'
+        } // end always
+    } //end post
 } //end pipeline
