@@ -36,10 +36,9 @@ pipeline {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
                             # apt update && apt install -y curl
-                            ### if you need to install locally, set BINDIR="~/.local/bin"
-                            BINDIR="~/.local/bin"
                             PATH="${PATH}:~/.local/bin"
-                            curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash
+                            curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+                            #curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash
                             orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
                         '''
                     } // end withCredentials
