@@ -1,5 +1,9 @@
 # Hello World App
 
+This repo is mostly for demo of orca-cli and the AppSec features.  There is a Jenkinsfile that runs through most of this.
+
+TODO: add a github workflow example.
+
 A simple Hello World application demonstrating the use of `debug` and `chalk` npm packages.
 
 ## Features
