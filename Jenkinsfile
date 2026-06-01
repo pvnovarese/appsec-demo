@@ -34,19 +34,19 @@ pipeline {
         stage('Orca AppSec Tests') {
             parallel {
                 
-                //stage('Orca IaC Security Scan') {
-                //    steps {
-                //        script {
-                //            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                //                sh '''
-                //                    # apt update && apt install -y curl
-                //                    # curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-                //                    ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
-                //                '''
-                //            } // end withCredentials
-                //        } // end script
-                //    } // end steps
-                //} // end stage IaC
+                stage('Orca IaC Security Scan') {
+                    steps {
+                        script {
+                            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                                sh '''
+                                    # apt update && apt install -y curl
+                                    # curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+                                    ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
+                                '''
+                            } // end withCredentials
+                        } // end script
+                    } // end steps
+                } // end stage IaC
 
                 //-----------------------------------------------------------------------------------
                 // Secret scan has a bug in it as of v1.106.3, I'll uncomment this when it's resolved
@@ -79,17 +79,17 @@ pipeline {
                     } // end steps
                 } // end stage SAST
 
-              //stage('Orca SCA Scan') {
-              //    steps {
-              //        script {
-              //            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-              //                sh '''
-              //                    ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" sca scan --path $(pwd)
-              //                '''
-              //            } // end withCredentials
-              //        } // end script
-              //    } // end steps
-              //} // end stage SCA
+              stage('Orca SCA Scan') {
+                  steps {
+                      script {
+                          withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                              sh '''
+                                  ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" sca scan --path $(pwd)
+                              '''
+                          } // end withCredentials
+                      } // end script
+                  } // end steps
+              } // end stage SCA
         
             } // end parallel
         } // end Orca AppSec Tests
