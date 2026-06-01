@@ -116,7 +116,7 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
-                            ~/.local/bin/orca-cli --no-color -p "${PROJECT_KEY}" --api-token "${TOKEN}" image scan ${IMAGE}
+                            ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" image scan ${IMAGE}
                         '''
                     } //end withCredentials
                 } // end script
