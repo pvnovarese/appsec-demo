@@ -55,7 +55,7 @@ pipeline {
                         sh '''
                             env
                             #~/.local/bin/orca-cli --no-color --exit-code 0 --project-key "${PROJECT_KEY}" --api-token "${TOKEN}" --debug secrets scan
-                            ~/.local/bin/orca-cli --project-key="key" --api-token="12345" --debug secrets scan 
+                            ~/.local/bin/orca-cli --project-key="appsec-demo" --api-token="${TOKEN}" --debug secrets scan 
                         '''
                     } // end withCredentials
                 } // end script
