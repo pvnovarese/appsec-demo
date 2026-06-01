@@ -45,10 +45,10 @@ pipeline {
             } // end steps
         } // end stage
 
-      //-----------------------------------------------------------------------------------
-      // Secret scan has a bug in it as of v1.106.3, I'll uncomment this when it's resolved
-      //-----------------------------------------------------------------------------------
-      stage('Orca Secrets Scan') {
+        //-----------------------------------------------------------------------------------
+        // Secret scan has a bug in it as of v1.106.3, I'll uncomment this when it's resolved
+        //-----------------------------------------------------------------------------------
+        stage('Orca Secrets Scan') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
