@@ -53,8 +53,9 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
-                            env
-                            #~/.local/bin/orca-cli --no-color --exit-code 0 --project-key "${PROJECT_KEY}" --api-token "${TOKEN}" --debug secrets scan
+                            # env
+                            # ~/.local/bin/orca-cli --no-color --exit-code 0 --project-key "${PROJECT_KEY}" --api-token "${TOKEN}" --debug secrets scan
+                            ~/.local/bin/orca-cli --version
                             ~/.local/bin/orca-cli --project-key="appsec-demo" --api-token="${TOKEN}" --debug secrets scan 
                         '''
                     } // end withCredentials
