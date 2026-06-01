@@ -96,23 +96,20 @@ pipeline {
         // ------------------------------------------------------------------ //
         //  Original – BUILD                                                    //
         // ------------------------------------------------------------------ //
-        //stage('Build') {
-        //    steps {
-        //        // Log in to registry
-        //        sh '''
-        //            echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
-        //        '''
-        //        // set up buildx
-        //        sh '''
-        //            ### docker buildx create --use --name jenkins-builder || true
-        //            docker buildx inspect --bootstrap
-        //        '''
-        //        // Build and push the image
-        //        sh '''
-        //            docker buildx build --push --tag ${IMAGE} .
-        //        '''
-        //    } //end steps
-        //} // end stage
+        stage('Build') {
+            steps {
+                // Log in to registry
+                sh '''
+                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
+                '''
+                // set up buildx, then build and push
+                sh '''
+                    ### docker buildx create --use --name jenkins-builder || true
+                    docker buildx inspect --bootstrap
+                    docker buildx build --push --tag ${IMAGE} .
+                '''
+            } //end steps
+        } // end stage
 
         //stage('Orca Container Image Security Scan') {
         //    steps {
