@@ -129,15 +129,19 @@ jobs:
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-sca-action
+      ### https://github.com/orcasecurity/shiftleft-fs-action
+      ### note: the "fs-action" combines SCA and Secrets scanning into one action
+      ### I am disabling secret scan in this job and doing secrets scanning separately
       - name: Run Orca SCA Scan
         id: orcasecurity_sca_scan
-        uses: orcasecurity/shiftleft-sca-action
+        uses: orcasecurity/shiftleft-fs-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           ### path . is scanning the entire repository
           path: "."
+          ### disable secrets since we're using the secrets-action separately
+          disable_secret: true
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
