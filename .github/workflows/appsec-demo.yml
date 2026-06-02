@@ -132,7 +132,7 @@ jobs:
       ### https://github.com/orcasecurity/shiftleft-sca-action
       - name: Run Orca SCA Scan
         id: orcasecurity_sca_scan
-        uses: orcasecurity/shiftleft-sca-action@v1
+        uses: orcasecurity/shiftleft-sca-action
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
