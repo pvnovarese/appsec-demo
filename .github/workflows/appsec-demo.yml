@@ -161,50 +161,68 @@ jobs:
       #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
 
 
-  Build:
+  build:
+    name: Image Build
     runs-on: ubuntu-latest
     needs: [iac-scan,secrets-scan,sast-scan,sca-scan]
-  #  permissions:
-  #    id-token: write
-  #    contents: read
-  #    packages: write
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
     steps:      
     - name: "Set IMAGE Environmental Variable"
       run: |
         echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
     - name: "Checkout Code"
       uses: actions/checkout@v4
-  #  - name: "Log in to the Container Registry"
-  #    uses: docker/login-action@v2
-  #    with:
-  #      registry: ${{ env.REGISTRY }}
-  #      username: ${{ github.actor }}
-  #      password: ${{ secrets.GITHUB_TOKEN }}      
-  #  - name: "Set up Docker Buildx"
-  #    uses: docker/setup-buildx-action@v2
-  #  - name: "Build Local Container"
-  #    uses: docker/build-push-action@v3
-  #    with:
-  #      tags: ${{ env.IMAGE }}
-  #      push: true
-  #      load: false      
+    - name: "Log in to the Container Registry"
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}      
+    - name: "Set up Docker Buildx"
+      uses: docker/setup-buildx-action@v2
+    - name: "Build Local Container"
+      uses: docker/build-push-action@v3
+      with:
+        tags: ${{ env.IMAGE }}
+        push: true
+        load: false      
 
-  #ImageScan:
-  #  runs-on: ubuntu-latest
-  #  needs: [Build]
-  #  steps:
-  #
-  #  - name: "Set IMAGE Environmental Variable"
-  #    run: |
-  #      echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
-  #          
-  #  - name: "Checkout Code"
-  #    uses: actions/checkout@v4
-  #
-  #  - name: "Install Orca cli"
-  #    run: |
-  #      curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-  #              
-  #  - name: "Scan Image"
-  #    run: |
-  #      ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
+  image-scan:
+    name: Orca Container Image Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    needs: [build]
+    steps:
+      - name: "Set IMAGE Environmental Variable"
+        run: |
+          echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+      ### https://github.com/orcasecurity/shiftleft-container-image-action
+      - name: Run Orca Container Image Scan
+        uses: orcasecurity/shiftleft-container-image-action@v1
+        id: orcasecurity_container_image_scan
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          image: ${{ env.IMAGE }}
+          #format: "sarif"
+          #output: "results/"
+          ### exit code 0 means this stage will pass regardless of policy violations
+          exit_code: 0 
+      #- name: Upload SARIF file
+      #  uses: github/codeql-action/upload-sarif@v3
+      #  if: ${{ always() && steps.orcasecurity_container_image_scan.outputs.exit_code != 1 }}
+      #  with:
+      #    sarif_file: results/image.sarif
+      ### alternatively, if you want to use orca-cli instead of the container-image-action:
+      #- name: "Install Orca cli"
+      #  run: |
+      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+      #- name: "Scan Image"
+      #  run: |
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
