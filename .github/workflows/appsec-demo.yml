@@ -22,6 +22,23 @@ env:
      
 jobs:
 
+  orca-fs-scan:
+    name: Orca fs Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Orca FS Scan
+        uses: orcasecurity/shiftleft-fs-action@v1
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          path:
+            # scanning the entire repository
+            "."
+
   IaCScan:
     runs-on: ubuntu-latest
     steps:
@@ -83,55 +100,55 @@ jobs:
         ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
 
 
-  Build:
-    runs-on: ubuntu-latest
-    needs: [IaCScan,SecretsScan,SASTScan,SCAScan]
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
-      
-    steps:
-        
-    - name: "Set IMAGE Environmental Variable"
-      run: |
-        echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+  #Build:
+  #  runs-on: ubuntu-latest
+  #  needs: [IaCScan,SecretsScan,SASTScan,SCAScan]
+  #  permissions:
+  #    id-token: write
+  #    contents: read
+  #    packages: write
+  #    
+  #  steps:
+  #      
+  #  - name: "Set IMAGE Environmental Variable"
+  #    run: |
+  #      echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+  #
+  #  - name: "Checkout Code"
+  #    uses: actions/checkout@v4
+  #
+  #  - name: "Log in to the Container Registry"
+  #    uses: docker/login-action@v2
+  #    with:
+  #      registry: ${{ env.REGISTRY }}
+  #      username: ${{ github.actor }}
+  #      password: ${{ secrets.GITHUB_TOKEN }}      
+  #
+  #  - name: "Set up Docker Buildx"
+  #    uses: docker/setup-buildx-action@v2
+  #  - name: "Build Local Container"
+  #    uses: docker/build-push-action@v3
+  #    with:
+  #      tags: ${{ env.IMAGE }}
+  #      push: true
+  #      load: false      
 
-    - name: "Checkout Code"
-      uses: actions/checkout@v4
-
-    - name: "Log in to the Container Registry"
-      uses: docker/login-action@v2
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}      
-
-    - name: "Set up Docker Buildx"
-      uses: docker/setup-buildx-action@v2
-    - name: "Build Local Container"
-      uses: docker/build-push-action@v3
-      with:
-        tags: ${{ env.IMAGE }}
-        push: true
-        load: false      
-
-  ImageScan:
-    runs-on: ubuntu-latest
-    needs: [Build]
-    steps:
-
-    - name: "Set IMAGE Environmental Variable"
-      run: |
-        echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
-            
-    - name: "Checkout Code"
-      uses: actions/checkout@v4
-
-    - name: "Install Orca cli"
-      run: |
-        curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-                
-    - name: "Scan Image"
-      run: |
-        ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
+  #ImageScan:
+  #  runs-on: ubuntu-latest
+  #  needs: [Build]
+  #  steps:
+  #
+  #  - name: "Set IMAGE Environmental Variable"
+  #    run: |
+  #      echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+  #          
+  #  - name: "Checkout Code"
+  #    uses: actions/checkout@v4
+  #
+  #  - name: "Install Orca cli"
+  #    run: |
+  #      curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+  #              
+  #  - name: "Scan Image"
+  #    run: |
+  #      ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
