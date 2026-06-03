@@ -34,7 +34,7 @@ pipeline {
         stage('Install Tools') {
             steps {
                 sh '''
-                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} -v v1.107.0
+                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
                 '''
             } // end steps
         } // end stage Install Tools
