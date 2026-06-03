@@ -47,7 +47,7 @@ pipeline {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" iac scan --path $(pwd)
+                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)
                                 '''
                             } // end withCredentials
                         } // end script
@@ -63,7 +63,7 @@ pipeline {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code 0 --project-key="appsec-demo" --api-token="${TOKEN}" --debug secrets scan --disable-git-scan
+                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan
                                 '''
                             } // end withCredentials
                         } // end script
@@ -75,7 +75,7 @@ pipeline {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" sast scan --path $(pwd)
+                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)
                                 '''
                             } // end withCredentials
                         } // end script
@@ -87,7 +87,7 @@ pipeline {
                       script {
                           withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                               sh '''
-                                  ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" sca scan --path $(pwd)
+                                  ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)
                               '''
                           } // end withCredentials
                       } // end script
@@ -123,7 +123,7 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
-                            ~/.local/bin/orca-cli --no-color --exit-code 0 -p "${PROJECT_KEY}" --api-token "${TOKEN}" image scan ${IMAGE}
+                            ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}
                         '''
                     } //end withCredentials
                 } // end script
