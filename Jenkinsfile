@@ -34,20 +34,25 @@ pipeline {
         stage('Install Tools') {
             steps {
                 sh '''
-                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} -v v1.107.0
                 '''
             } // end steps
         } // end stage Install Tools
 
         stage('Orca AppSec Tests') {
             parallel {
+
+                //
+                // NOTE: --exit-code 0 prevents scan failures from breaking the build.
+                // In production, remove this flag from each stage so critical findings block the pipeline.
+                //
                 
                 stage('Orca IaC Scan') {
                     steps {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)
                                 '''
                             } // end withCredentials
                         } // end script
@@ -63,7 +68,7 @@ pipeline {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan
                                 '''
                             } // end withCredentials
                         } // end script
@@ -75,7 +80,7 @@ pipeline {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                                 sh '''
-                                    ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)
                                 '''
                             } // end withCredentials
                         } // end script
@@ -87,7 +92,7 @@ pipeline {
                       script {
                           withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                               sh '''
-                                  ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)
+                                  ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)
                               '''
                           } // end withCredentials
                       } // end script
@@ -123,7 +128,7 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         sh '''
-                            ~/.local/bin/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}
+                            ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}
                         '''
                     } //end withCredentials
                 } // end script
