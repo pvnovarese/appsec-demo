@@ -19,7 +19,6 @@ pipeline {
         REGISTRY_SERVER = "https://index.docker.io/v1/"
         // Replace with your GitHub org/repo, e.g. 'pvnovarese/2026-01-demo'
         REPOSITORY = "${DOCKER_HUB_USR}/${JOB_BASE_NAME}"
-        BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
         TAG = "build-${BUILD_NUMBER}"
         IMAGE = "${REGISTRY}/${REPOSITORY}:${TAG}"
         // might install some binaries here:
