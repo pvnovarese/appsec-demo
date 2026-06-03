@@ -43,7 +43,7 @@ pipeline {
         stage('Orca AppSec Tests') {
             parallel {
                 
-                stage('Orca IaC Security Scan') {
+                stage('Orca IaC Scan') {
                     steps {
                         script {
                             withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
