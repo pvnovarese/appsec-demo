@@ -1,5 +1,5 @@
 name: Orca AppSec Demo
-### example integration for Hunted Labs Entercept in a pipeline
+### example integration for orca security appsec features in a github workflow
 
 on:
   ### UNCOMMENT THIS SECTION TO AUTOBUILD ON ANY PUSH
