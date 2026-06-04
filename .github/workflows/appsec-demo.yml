@@ -197,11 +197,6 @@ jobs:
       security-events: write
     needs: [build]
     steps:
-      #- name: "Set IMAGE Environmental Variable"
-      #  run: |
-      #    echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
       ### https://github.com/orcasecurity/shiftleft-container-image-action
       - name: Run Orca Container Image Scan
         uses: orcasecurity/shiftleft-container-image-action@v1
