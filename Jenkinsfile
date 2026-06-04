@@ -45,66 +45,40 @@ pipeline {
         } // end stage Install Tools
 
         stage('Orca AppSec Tests') {
-            parallel {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                        parallel (
 
-                //
-                // NOTE: --exit-code 0 prevents scan failures from breaking the build.
-                // In production, remove this flag from each stage so critical findings block the pipeline.
-                //
-                
-                stage('Orca IaC Scan') {
-                    steps {
-                        script {
-                            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                                sh '''
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)
-                                '''
-                            } // end withCredentials
-                        } // end script
-                    } // end steps
-                } // end stage IaC
+                            //
+                            // NOTE: --exit-code 0 prevents scan failures from breaking the build.
+                            // In production, remove this flag from each stage so critical findings block the pipeline.
+                            //
 
-                //-----------------------------------------------------------------------
-                // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
-                // seems to be a viable workaround for now.
-                //-----------------------------------------------------------------------
-                stage('Orca Secrets Scan') {
-                    steps {
-                        script {
-                            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                                sh '''
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan
-                                '''
-                            } // end withCredentials
-                        } // end script
-                    } // end steps
-                } // end stage Secrets
+                            'Orca IaC Scan': {
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)'
+                            },
+
+                            //-----------------------------------------------------------------------
+                            // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
+                            // seems to be a viable workaround for now.
+                            //-----------------------------------------------------------------------
+                            'Orca Secrets Scan': {
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan'
+                            },
+
+                            'Orca SAST Scan': {
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)'
+                            },
+                            
+                            'Orca SCA Scan': {
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)'
+                            } 
         
-                stage('Orca SAST Scan') {
-                    steps {
-                        script {
-                            withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                                sh '''
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)
-                                '''
-                            } // end withCredentials
-                        } // end script
-                    } // end steps
-                } // end stage SAST
-
-              stage('Orca SCA Scan') {
-                  steps {
-                      script {
-                          withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                              sh '''
-                                  ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)
-                              '''
-                          } // end withCredentials
-                      } // end script
-                  } // end steps
-              } // end stage SCA
-        
-            } // end parallel
+                        } // end parallel
+                    } // end withCredentials
+                } // end script
+            } // end steps
         } // end Orca AppSec Tests
         
         // ------------------------------------------------------------------ //
