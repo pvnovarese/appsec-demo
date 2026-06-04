@@ -59,8 +59,13 @@ pipeline {
                             //
                             // orca-cli lets you pass the api token on the command line with --api-token but it also will
                             // simply read it from the env ORCA_SECURITY_API_TOKEN, which is what we're using here.
+                            //
+                            // by default, all of these scans will start in the current directory, which in this case
+                            // is the workspace.  if you want to restrict any of them to a particular part, use
+                            // the --path parameter.  (e.g. orca-cli secrets scan --path=./src)
+                            //
                             'Orca IaC Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan'
                             },
                             //------------------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
@@ -71,11 +76,11 @@ pipeline {
                             },
 
                             'Orca SAST Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sast scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sast scan'
                             },
                             
                             'Orca SCA Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --path=$(pwd) --dependency-tree'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --dependency-tree'
                             } 
                             //
                         ) // end parallel
@@ -137,7 +142,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'ORCA_SECURITY_API_TOKEN')]) {
-                        sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" image scan ${IMAGE}'
+                        sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" image scan ${IMAGE} --dependency-tree'
                     } //end withCredentials
                 } // end script
             } // end steps
