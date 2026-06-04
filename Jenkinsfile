@@ -16,16 +16,6 @@ pipeline {
     // that the tests could possibly end up on.
  
     environment {
-        CREDENTIAL = "docker-hub"
-        DOCKER_HUB = credentials("$CREDENTIAL")
-        REGISTRY_USER = "${DOCKER_HUB_USR}"
-        REGISTRY_PASSWORD = "${DOCKER_HUB_PSW}"     
-        REGISTRY      = 'docker.io'
-        // Replace with your GitHub org/repo, e.g. 'pvnovarese/2026-01-demo'
-        REPOSITORY = "${DOCKER_HUB_USR}/${JOB_BASE_NAME}"
-        // Replace with whatever tagging scheme you like
-        TAG = "build-${BUILD_NUMBER}"
-        IMAGE = "${REGISTRY}/${REPOSITORY}:${TAG}"
         // might install some binaries here:
         LOCAL_BIN     = "${env.HOME}/.local/bin"
         // Orca project key
@@ -80,6 +70,7 @@ pipeline {
                 } // end script
             } // end steps
         } // end Orca AppSec Tests
+
         
         // ------------------------------------------------------------------ //
         //  Original – BUILD                                                  //
@@ -87,19 +78,29 @@ pipeline {
         //  containerizing, just skip this and the Container Image scan step. //
         // ------------------------------------------------------------------ //
         stage('Build') {
+            environment {
+                // Replace with your registry
+                REGISTRY      = 'docker.io'
+            }
             steps {
-                // Log in to registry
-                sh '''
-                    echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
-                '''
-                // set up buildx
-                sh '''
-                    docker buildx inspect --bootstrap
-                '''
-                // Build and push the image
-                sh '''
-                    docker buildx build --push --tag ${IMAGE} .
-                '''
+
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub',
+                    usernameVariable: 'REGISTRY_USER',
+                    passwordVariable: 'REGISTRY_PASSWORD'
+                )]) {
+                    script {
+                        // Setting env.IMAGE here makes it available to all subsequent stages
+                        // You can change this as needed, e.g. change the tag scheme, whatever
+                        env.IMAGE = "${REGISTRY}/${REGISTRY_USER}/${JOB_BASE_NAME}:build-${BUILD_NUMBER}"
+                    } // end script
+                    // log in to registry
+                    sh 'echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                    // set up buildx
+                    sh 'docker buildx inspect --bootstrap'
+                    // Build and push the image
+                    sh 'docker buildx build --push --tag ${IMAGE} .'
+                } // end withCredentials
             } //end steps
         } // end stage
 
