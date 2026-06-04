@@ -32,7 +32,13 @@ pipeline {
                 cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
-                // install orca-cli
+                // install orca-cli 
+                // note: we are installing this outside of the workspace, so it doesn't get wiped when you issue the 
+                // the cleanWs (before the build, and in the post stage). 
+                //
+                // orca-cli docs: https://docs.orcasecurity.io/docs/orca-cli
+                //
+                // to do: add a check so we skip the download if it's already available (need to check the version)
                 sh '''
                     curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
                 '''
@@ -56,10 +62,10 @@ pipeline {
                             'Orca IaC Scan': {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan --path=$(pwd)'
                             },
-                            //-----------------------------------------------------------------------
+                            //------------------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
-                            // seems to be a viable workaround for now.
-                            //-----------------------------------------------------------------------
+                            // seems to be a viable workaround for now.  Bug seems to still exist in 1.107.0
+                            //------------------------------------------------------------------------------
                             'Orca Secrets Scan': {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
                             },
@@ -69,7 +75,7 @@ pipeline {
                             },
                             
                             'Orca SCA Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --path=$(pwd) --dependency-tree'
                             } 
                             //
                         ) // end parallel
