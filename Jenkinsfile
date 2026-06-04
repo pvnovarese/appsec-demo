@@ -8,7 +8,6 @@ pipeline {
      *   - a credential ORCA_SECURITY_API_TOKEN with an api token
      *   - Curl, Docker and Docker Buildx available on the Jenkins agent.
      */
-
     
     agent any
     // this is actually probably not a great idea, I only tested this on a single node setup
@@ -23,7 +22,7 @@ pipeline {
     } // end environment
  
     stages {
-
+        //
         stage('Setup') {
             steps {
                 // Clean before build
@@ -36,22 +35,19 @@ pipeline {
                 '''
             } // end steps
         } // end stage Setup
-
+        //
         stage('Orca AppSec Tests') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
                         parallel (
-
                             //
                             // NOTE: --exit-code 0 prevents scan failures from breaking the build.
                             // In production, remove this flag from each stage so critical findings block the pipeline.
                             //
-
                             'Orca IaC Scan': {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)'
                             },
-
                             //-----------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
                             // seems to be a viable workaround for now.
@@ -67,28 +63,30 @@ pipeline {
                             'Orca SCA Scan': {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)'
                             } 
-        
+                            //
                         ) // end parallel
                     } // end withCredentials
                 } // end script
             } // end steps
         } // end Orca AppSec Tests
-        
+        //
         // ------------------------------------------------------------------ //
         //  Original – BUILD                                                  //
         //  just use your existing build step or if you're not                //
         //  containerizing, just skip this and the Container Image scan step. //
         // ------------------------------------------------------------------ //
+        //
         stage('Build') {
             environment {
                 // Replace with your registry
                 REGISTRY      = 'docker.io'
             }
             steps {
-                // Clean before build
+                // Clean before build (if we're doing any debug in the AppSec stage we should comment this out)
                 cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
+                // get the docker-hub credential (or whatever username/password credential for whatever registry)
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-hub',
                     usernameVariable: 'REGISTRY_USER',
@@ -108,7 +106,7 @@ pipeline {
                 } // end withCredentials
             } //end steps
         } // end stage
-
+        //
         stage('Orca Container Image Security Scan') {
             steps {
                 script {
@@ -118,13 +116,18 @@ pipeline {
                 } // end script
             } // end steps
         } // end stage
-        
+        //
     } // end stages
  
     post {
         always {
             // Clean up Docker login credentials from the agent
             sh 'docker logout ${REGISTRY} || true'
+            //
+            // thought about doing a cleanWs() here but I like leaving the workspace as-is so I can investigate if needed
+            //
+            // could also do a "docker image rm ${IMAGE}" just to really mop up
+            //
         } // end always
     } //end post
 } //end pipeline
