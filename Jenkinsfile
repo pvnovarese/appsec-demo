@@ -101,7 +101,7 @@ pipeline {
                     } // end script
                     // log in to registry, // set up buildx, // Build and push the image
                     sh '''
-                        echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                        echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                         docker buildx inspect --bootstrap
                         docker buildx build --push --tag ${IMAGE} .
                     '''
