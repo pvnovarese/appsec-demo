@@ -22,17 +22,20 @@ pipeline {
         PROJECT_KEY = "appsec-demo"
     } // end environment
  
- 
     stages {
 
-        // install latest orca-cli in user's .local/bin
-        stage('Install Tools') {
+        stage('Setup') {
             steps {
+                // Clean before build
+                cleanWs()
+                // We need to explicitly checkout from SCM here
+                checkout scm
+                // install orca-cli
                 sh '''
                     curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
                 '''
             } // end steps
-        } // end stage Install Tools
+        } // end stage Setup
 
         stage('Orca AppSec Tests') {
             steps {
@@ -70,7 +73,6 @@ pipeline {
                 } // end script
             } // end steps
         } // end Orca AppSec Tests
-
         
         // ------------------------------------------------------------------ //
         //  Original – BUILD                                                  //
@@ -83,7 +85,10 @@ pipeline {
                 REGISTRY      = 'docker.io'
             }
             steps {
-
+                // Clean before build
+                cleanWs()
+                // We need to explicitly checkout from SCM here
+                checkout scm
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-hub',
                     usernameVariable: 'REGISTRY_USER',
@@ -94,12 +99,12 @@ pipeline {
                         // You can change this as needed, e.g. change the tag scheme, whatever
                         env.IMAGE = "${REGISTRY}/${REGISTRY_USER}/${JOB_BASE_NAME}:build-${BUILD_NUMBER}"
                     } // end script
-                    // log in to registry
-                    sh 'echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
-                    // set up buildx
-                    sh 'docker buildx inspect --bootstrap'
-                    // Build and push the image
-                    sh 'docker buildx build --push --tag ${IMAGE} .'
+                    // log in to registry, // set up buildx, // Build and push the image
+                    sh '''
+                        echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin'
+                        docker buildx inspect --bootstrap
+                        docker buildx build --push --tag ${IMAGE} .
+                    '''
                 } // end withCredentials
             } //end steps
         } // end stage
@@ -108,9 +113,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                        sh '''
-                            ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}
-                        '''
+                        sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}'
                     } //end withCredentials
                 } // end script
             } // end steps
