@@ -15,6 +15,8 @@ pipeline {
     // that the tests could possibly end up on.
  
     environment {
+        // Replace with your registry (if you're using container images, if not you can ignore this)
+        REGISTRY      = 'docker.io'
         // might install some binaries here:
         LOCAL_BIN     = "${env.HOME}/.local/bin"
         // Orca project key
@@ -69,18 +71,18 @@ pipeline {
                 } // end script
             } // end steps
         } // end Orca AppSec Tests
+
+        
+        // --------------------------------------------------------------------------------
+        //  Original – BUILD                                                  
+        //  just use your existing build step, this is just here for demo purposes.
+        //  HOWEVER, note that I'm setting env.IMAGE in this step, which is needed for the
+        //  container scan step (makes sure we're scanning the image that is built here).
         //
-        // ------------------------------------------------------------------ //
-        //  Original – BUILD                                                  //
-        //  just use your existing build step or if you're not                //
-        //  containerizing, just skip this and the Container Image scan step. //
-        // ------------------------------------------------------------------ //
+        //  if you're not containerizing, just skip this AND the Container Image scan step. 
+        // --------------------------------------------------------------------------------
         //
         stage('Build') {
-            environment {
-                // Replace with your registry
-                REGISTRY      = 'docker.io'
-            }
             steps {
                 // Clean before build (if we're doing any debug in the AppSec stage we should comment this out)
                 cleanWs()
@@ -107,6 +109,8 @@ pipeline {
             } //end steps
         } // end stage
         //
+        //
+        // NOTE: skip this stage if you aren't containerizing your project.  Note this won't work
         stage('Orca Container Image Security Scan') {
             steps {
                 script {
