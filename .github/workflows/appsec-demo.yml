@@ -24,6 +24,9 @@ jobs:
   iac-scan:
     name: Orca IaC Scan
     runs-on: ubuntu-latest
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -36,6 +39,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### just scan the Dockerfile, or specify "terraform" etc
           path: "./Dockerfile"
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -56,6 +60,9 @@ jobs:
   secrets-scan:
     name: Orca Secrets Scan  
     runs-on: ubuntu-latest
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write        
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -68,6 +75,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### path . is scanning the entire repository
           path: "."
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -89,8 +97,9 @@ jobs:
   sast-scan:
     name: Orca SAST Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:            
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -103,6 +112,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### path . is scanning the entire repository
           path: "."
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines          
           #format: "sarif"
           #output: "results/"
           #### exit code 0 means this stage will pass regardless of policy violations
@@ -123,8 +133,9 @@ jobs:
   sca-scan:
     name: Orca SCA Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write    
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -141,6 +152,7 @@ jobs:
           path: "."
           ### disable secrets since we're using the secrets-action separately
           disable_secret: true
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -162,6 +174,7 @@ jobs:
   build:
     name: Image Build
     runs-on: ubuntu-latest
+    ### make sure *all* of the above appsec scans pass before continuing.
     needs: [iac-scan,secrets-scan,sast-scan,sca-scan]    
     permissions:
       id-token: write
