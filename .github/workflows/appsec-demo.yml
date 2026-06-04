@@ -18,13 +18,15 @@ on:
 env:
   REGISTRY: ghcr.io
   PROJECT_KEY: appsec-demo
-  ORCA_SECURITY_API_TOKEN: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
      
 jobs:
 
   iac-scan:
     name: Orca IaC Scan
     runs-on: ubuntu-latest
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -37,6 +39,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### just scan the Dockerfile, or specify "terraform" etc
           path: "./Dockerfile"
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -57,6 +60,9 @@ jobs:
   secrets-scan:
     name: Orca Secrets Scan  
     runs-on: ubuntu-latest
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write        
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -69,6 +75,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### path . is scanning the entire repository
           path: "."
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -90,8 +97,9 @@ jobs:
   sast-scan:
     name: Orca SAST Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:            
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -104,6 +112,7 @@ jobs:
           project_key: ${{ env.PROJECT_KEY }}
           ### path . is scanning the entire repository
           path: "."
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines          
           #format: "sarif"
           #output: "results/"
           #### exit code 0 means this stage will pass regardless of policy violations
@@ -124,8 +133,9 @@ jobs:
   sca-scan:
     name: Orca SCA Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write    
+    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    #permissions:
+    #  security-events: write    
     steps:
       - name: "Checkout Code"
         uses: actions/checkout@v4
@@ -142,6 +152,7 @@ jobs:
           path: "."
           ### disable secrets since we're using the secrets-action separately
           disable_secret: true
+          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -160,19 +171,21 @@ jobs:
       #  run: |
       #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
 
-
   build:
     name: Image Build
     runs-on: ubuntu-latest
-    needs: [iac-scan,secrets-scan,sast-scan,sca-scan]
+    ### make sure *all* of the above appsec scans pass before continuing.
+    needs: [iac-scan,secrets-scan,sast-scan,sca-scan]    
     permissions:
       id-token: write
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.set_image.outputs.image }}
     steps:      
     - name: "Set IMAGE Environmental Variable"
-      run: |
-        echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+      id: set_image
+      run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
     - name: "Checkout Code"
       uses: actions/checkout@v4
     - name: "Log in to the Container Registry"
@@ -186,7 +199,7 @@ jobs:
     - name: "Build Local Container"
       uses: docker/build-push-action@v3
       with:
-        tags: ${{ env.IMAGE }}
+        tags: ${{ steps.set_image.outputs.image }}
         push: true
         load: false      
 
@@ -197,11 +210,6 @@ jobs:
       security-events: write
     needs: [build]
     steps:
-      - name: "Set IMAGE Environmental Variable"
-        run: |
-          echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
       ### https://github.com/orcasecurity/shiftleft-container-image-action
       - name: Run Orca Container Image Scan
         uses: orcasecurity/shiftleft-container-image-action@v1
@@ -209,7 +217,7 @@ jobs:
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          image: ${{ env.IMAGE }}
+          image: ${{ needs.build.outputs.image }}
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
