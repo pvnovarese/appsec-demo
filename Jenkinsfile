@@ -6,6 +6,7 @@ pipeline {
      *     with your docker hub username and a Personal Access Token (PAT) that has
      *     read/write permissions.
      *   - a credential ORCA_SECURITY_API_TOKEN with an api token
+     *   - create a PROJECT_KEY in orca (a label to organize the findings)
      *   - Curl, Docker and Docker Buildx available on the Jenkins agent.
      */
     
@@ -19,7 +20,7 @@ pipeline {
         REGISTRY      = 'docker.io'
         // might install some binaries here:
         LOCAL_BIN     = "${env.HOME}/.local/bin"
-        // Orca project key
+        // Orca project key (this is a label for organizing the results, not a secret)
         PROJECT_KEY = "appsec-demo"
     } // end environment
  
@@ -41,29 +42,34 @@ pipeline {
         stage('Orca AppSec Tests') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'ORCA_SECURITY_API_TOKEN')]) {
                         parallel (
+                            //
+                            // in this section , you need a PROJECT_KEY (a label Orca uses to organize findings) which
+                            // is defined globally since it's going to also be used in the container scan stage.
                             //
                             // NOTE: --exit-code 0 prevents scan failures from breaking the build.
                             // In production, remove this flag from each stage so critical findings block the pipeline.
                             //
+                            // orca-cli lets you pass the api token on the command line with --api-token but it also will
+                            // simply read it from the env ORCA_SECURITY_API_TOKEN, which is what we're using here.
                             'Orca IaC Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" iac scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan --path=$(pwd)'
                             },
                             //-----------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
                             // seems to be a viable workaround for now.
                             //-----------------------------------------------------------------------
                             'Orca Secrets Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" secrets scan --disable-git-scan'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
                             },
 
                             'Orca SAST Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" sast scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sast scan --path=$(pwd)'
                             },
                             
                             'Orca SCA Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --path=$(pwd)'
                             } 
                             //
                         ) // end parallel
@@ -110,12 +116,22 @@ pipeline {
         } // end stage
         //
         //
-        // NOTE: skip this stage if you aren't containerizing your project.  Note this won't work
+        // NOTE: skip this stage if you aren't containerizing your project.
+        //
+        // in this section , you need a PROJECT_KEY (a label Orca uses to organize findings) which
+        // is defined globally since it's going to also be used in the above pre-build test stages.
+        //
+        // NOTE: --exit-code 0 prevents scan failures from breaking the build.
+        // In production, remove this flag from each stage so critical findings block the pipeline.
+        //
+        // orca-cli lets you pass the api token on the command line with --api-token but it also will
+        // simply read it from the env ORCA_SECURITY_API_TOKEN, which is what we're using here.
+        //
         stage('Orca Container Image Security Scan') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'TOKEN')]) {
-                        sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}" image scan ${IMAGE}'
+                    withCredentials([string(credentialsId: 'ORCA_SECURITY_API_TOKEN', variable: 'ORCA_SECURITY_API_TOKEN')]) {
+                        sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" image scan ${IMAGE}'
                     } //end withCredentials
                 } // end script
             } // end steps
