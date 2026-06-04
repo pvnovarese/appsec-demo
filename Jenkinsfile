@@ -5,7 +5,7 @@ pipeline {
      *   - A credential of type "Username with password" named 'docker-hub'
      *     with your docker hub username and a Personal Access Token (PAT) that has
      *     read/write permissions.
-     *   - a credential ORCA_SECURITY_API_TOKEN with an api token
+     *   - a credential ORCA_SECURITY_API_TOKEN with an api token with "Shift Left User" role
      *   - create a PROJECT_KEY in orca (a label to organize the findings)
      *   - Curl, Docker and Docker Buildx available on the Jenkins agent.
      */
@@ -14,6 +14,22 @@ pipeline {
     // this is actually probably not a great idea, I only tested this on a single node setup
     // if you do this on a multi-node setup, you would need to install orca-cli on every node
     // that the tests could possibly end up on.
+
+    options {
+        // Kill the run if it hangs (e.g. a scan or buildx push that stalls)
+        timeout(time: 30, unit: 'MINUTES')
+
+        // Only one run at a time — prevents concurrent runs from fighting over
+        // the shared buildx builder and the docker login/logout session
+        disableConcurrentBuilds()
+
+        // Keep the last 20 builds' logs/artifacts, discard older ones
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+
+        // Prefix every console line with a timestamp (handy for scan timing)
+        // (this needs the timestamper plugin, which is usually installed by default)
+        timestamps()
+    }
  
     environment {
         // Replace with your registry (if you're using container images, if not you can ignore this)
