@@ -159,29 +159,20 @@ jobs:
       #  run: |
       #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
 
-  setup:
-    name: Setup for Image Build
-    runs-on: ubuntu-latest
-    needs: [iac-scan,secrets-scan,sast-scan,sca-scan]    
-    outputs:
-      image: ${{ steps.set.outputs.image }}
-    steps:
-      - id: set
-        run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-        ### reference ${{ needs.setup.outputs.image }} beyond here
-
   build:
     name: Image Build
     runs-on: ubuntu-latest
-    needs: [setup]
+    needs: [iac-scan,secrets-scan,sast-scan,sca-scan]    
     permissions:
       id-token: write
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.set_image.outputs.image }}
     steps:      
-    #- name: "Set IMAGE Environmental Variable"
-    #  run: |
-    #    echo "IMAGE=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV        
+    - name: "Set IMAGE Environmental Variable"
+      id: set_image
+      run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
     - name: "Checkout Code"
       uses: actions/checkout@v4
     - name: "Log in to the Container Registry"
@@ -195,7 +186,7 @@ jobs:
     - name: "Build Local Container"
       uses: docker/build-push-action@v3
       with:
-        tags: ${{ needs.setup.outputs.image }}
+        tags: ${{ steps.set_image.outputs.image }}
         push: true
         load: false      
 
@@ -218,7 +209,7 @@ jobs:
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          image: ${{ needs.setup.outputs.image }}
+          image: ${{ needs.build.outputs.image }}
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
