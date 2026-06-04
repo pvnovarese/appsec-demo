@@ -60,12 +60,10 @@ pipeline {
                             // orca-cli lets you pass the api token on the command line with --api-token but it also will
                             // simply read it from the env ORCA_SECURITY_API_TOKEN, which is what we're using here.
                             //
-                            // by default, all of these scans will start in the current directory, which in this case
-                            // is the workspace.  if you want to restrict any of them to a particular part, use
-                            // the --path parameter.  (e.g. orca-cli secrets scan --path=./src)
+                            // --path is required for iac, sast, and sca scans, but is optional and defaults to pwd for secrets scan.
                             //
                             'Orca IaC Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" iac scan --path=$(pwd)'
                             },
                             //------------------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
@@ -76,11 +74,11 @@ pipeline {
                             },
 
                             'Orca SAST Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sast scan'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sast scan --path=$(pwd)'
                             },
                             
                             'Orca SCA Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --dependency-tree'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" sca scan --dependency-tree --path=$(pwd)'
                             } 
                             //
                         ) // end parallel
