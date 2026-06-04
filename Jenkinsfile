@@ -75,7 +75,7 @@ pipeline {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --api-token="${TOKEN}"  sca scan --path=$(pwd)'
                             } 
         
-                        } // end parallel
+                        ) // end parallel
                     } // end withCredentials
                 } // end script
             } // end steps
