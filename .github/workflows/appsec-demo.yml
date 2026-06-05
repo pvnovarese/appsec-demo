@@ -281,36 +281,42 @@ jobs:
           context: .
           tags: ${{ steps.set_image.outputs.image }}
           push: true
-        
 
+  # ---------------------------------------------------------------------------
+  # Scan the built image for OS + package vulnerabilities.
+  # ---------------------------------------------------------------------------
   image-scan:
     name: Orca Container Image Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
+    timeout-minutes: 15
     needs: [build]
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
+    #permissions:
+    #  contents: read
+    #  security-events: write
     steps:
-      ### https://github.com/orcasecurity/shiftleft-container-image-action
       - name: Run Orca Container Image Scan
-        uses: orcasecurity/shiftleft-container-image-action@v1
         id: orcasecurity_container_image_scan
+        uses: orcasecurity/shiftleft-container-image-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           image: ${{ needs.build.outputs.image }}
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                              
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                     
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_container_image_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/image.sarif
-      ### alternatively, if you want to use orca-cli instead of the container-image-action:
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-      #- name: "Scan Image"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" image scan ${{ needs.build.outputs.image }}
+      
