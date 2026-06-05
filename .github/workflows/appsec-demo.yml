@@ -1,23 +1,67 @@
 name: Orca AppSec Demo
-### example integration for orca security appsec features in a github workflow
+# =============================================================================
+# Orca Security – AppSec Demo Workflow
+# =============================================================================
+# A self-contained example showing Orca's "shift-left" AppSec scans running in
+# GitHub Actions. Each scan lives in its own job so you can copy whichever
+# section(s) you want straight into an existing workflow.
+#
+# Pipeline order:  IaC + Secrets + SAST + SCA  ->  Build image  ->  Image scan
+#
+# -----------------------------------------------------------------------------
+# PREREQUISITES
+#   1. Save this file as:  .github/workflows/orca-appsec-demo.yml
+#   2. Add a repo (or org) secret named ORCA_SECURITY_API_TOKEN.
+#        Settings > Secrets and variables > Actions > New repository secret
+#        Generate the token in the Orca platform (Settings > Users & Permissions > API Tokens).
+#        This token needs the "Shift Left User" role.
+#   3. Set PROJECT_KEY below to the project you created in Orca.
+#
+# GATING (important):
+#   Every scan uses exit_code: 0, so it reports findings but NEVER fails the run
+#   – ideal for a demo. To make a scan actually block the build, change its
+#   exit_code to 3 (3 is the default for policy-induced failure). 
+#   The "build" job already waits on all four scans, so a scan that exits 
+#   non-zero will stop the pipeline there.
+#
+# SARIF / GitHub code scanning (optional):
+#   The commented "format/output" + "Upload SARIF" blocks send findings to the
+#   GitHub Security tab. They require permissions: security-events: write AND,
+#   for PRIVATE repos, GitHub Advanced Security. 
+#
+# PRODUCTION HARDENING:
+#   For real use, pin every third-party action to a full commit SHA instead of a
+#   moving tag (e.g. orcasecurity/shiftleft-iac-action@<sha>) to remove
+#   supply-chain risk. Major tags are used here only for readability.
+#
+# Action docs:
+#   IaC      https://github.com/orcasecurity/shiftleft-iac-action
+#   Secrets  https://github.com/orcasecurity/shiftleft-secrets-action
+#   SAST     https://github.com/orcasecurity/shiftleft-sast-action
+#   SCA/FS   https://github.com/orcasecurity/shiftleft-fs-action
+#   Image    https://github.com/orcasecurity/shiftleft-container-image-action
+# =============================================================================
 
 on:
-  ### UNCOMMENT THIS SECTION TO AUTOBUILD ON ANY PUSH
+  ### Run on demand from the Actions tab (default for a demo)
+  workflow_dispatch:
+  ### UNCOMMENT to scan on every push to main
   #push:
-  #  branches:
-  #    - main
-  ### UNCOMMENT THIS SECTION TO BUILD ON A REGULAR SCHEDULE
+  #  branches: [ main ]
+  ### UNCOMMENT to scan on pull requests targeting main
+  #pull_request:
+  #  branches: [ main ]
+  ### UNCOMMENT to scan on a schedule (here: every 14 days)
   #schedule:
   #  - cron: '38 23 */14 * *'
-  ### UNCOMMENT THIS SECTION TO ENABLE ON-DEMAND BUILDS
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: 'On-Demand AppSec Scan'  
-
+  
+### Least-privilege by default
+permissions:
+  contents: read
+  
 env:
-  REGISTRY: ghcr.io
-  PROJECT_KEY: appsec-demo
+  REGISTRY: ghcr.io           ### if you change this you will probably need to update the build section to handle registry credentials
+  PROJECT_KEY: appsec-demo    ### set to your Orca project key
      
 jobs:
 
