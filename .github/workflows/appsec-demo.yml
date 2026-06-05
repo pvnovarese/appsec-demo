@@ -145,82 +145,89 @@ jobs:
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
       #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" secrets scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # SAST scan – static analysis of your first-party source code.
+  # ---------------------------------------------------------------------------
   sast-scan:
     name: Orca SAST Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
     #permissions:
-    #  security-events: write    
-    steps:            
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-sast-action
+    #  contents: read
+    #  security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
       - name: Run Orca SAST Scan
         id: orcasecurity_sast_scan
         uses: orcasecurity/shiftleft-sast-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### path . is scanning the entire repository
           path: "."
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines          
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                    
           #format: "sarif"
           #output: "results/"
-          #### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                    
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_sast_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/sast.sarif
-      ### alternatively, if you want to use orca-cli instead of the sast-action
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
-      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin            
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sast scan --path $(pwd)
+      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" sast scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # SCA scan – vulnerable open-source dependencies.
+  # The fs-action does SCA + secrets together; secrets is disabled here because
+  # the dedicated secrets-scan job above already covers it.
+  # ---------------------------------------------------------------------------
   sca-scan:
     name: Orca SCA Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):    
     #permissions:
-    #  security-events: write    
+    #  contents: read
+    #  security-events: write
     steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-fs-action
-      ### note: the "fs-action" combines SCA and Secrets scanning into one action
-      ### I am disabling secret scan in this job and doing secrets scanning separately
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
       - name: Run Orca SCA Scan
         id: orcasecurity_sca_scan
         uses: orcasecurity/shiftleft-fs-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### path . is scanning the entire repository
           path: "."
-          ### disable secrets since we're using the secrets-action separately
-          disable_secret: true
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
+          disable_secret: true   # avoid double-reporting with the secrets-scan job
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                              
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
-      ### upload SARIF file for github code scanning
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+          
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                     
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_sca_scan.outputs.exit_code != 1 }}
       #  with:
-      #    sarif_file: results/sca.sarif        
-      ### alternatively, if you want to use orca-cli instead of the sca-action:
-      #- name: "Install Orca cli"
+      #    sarif_file: results/sca.sarif
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" sca scan --path $(pwd)
+
 
   build:
     name: Image Build
