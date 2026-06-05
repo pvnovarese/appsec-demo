@@ -1,236 +1,322 @@
 name: Orca AppSec Demo
-### example integration for orca security appsec features in a github workflow
+# =============================================================================
+# Orca Security – AppSec Demo Workflow
+# =============================================================================
+# A self-contained example showing Orca's "shift-left" AppSec scans running in
+# GitHub Actions. Each scan lives in its own job so you can copy whichever
+# section(s) you want straight into an existing workflow.
+#
+# Pipeline order:  IaC + Secrets + SAST + SCA  ->  Build image  ->  Image scan
+#
+# -----------------------------------------------------------------------------
+# PREREQUISITES
+#   1. Save this file as:  .github/workflows/orca-appsec-demo.yml
+#   2. Add a repo (or org) secret named ORCA_SECURITY_API_TOKEN.
+#        Settings > Secrets and variables > Actions > New repository secret
+#        Generate the token in the Orca platform (Settings > Users & Permissions > API Tokens).
+#        This token needs the "Shift Left User" role.
+#   3. Set PROJECT_KEY below to the project you created in Orca.
+#
+# GATING (important):
+#   Every scan uses exit_code: 0, so it reports findings but NEVER fails the run
+#   – ideal for a demo. To make a scan actually block the build, change its
+#   exit_code to 3 (3 is the default for policy-induced failure). 
+#   The "build" job already waits on all four scans, so a scan that exits 
+#   non-zero will stop the pipeline there.
+#
+# SARIF / GitHub code scanning (optional):
+#   The commented "format/output" + "Upload SARIF" blocks send findings to the
+#   GitHub Security tab. They require permissions: security-events: write AND,
+#   for PRIVATE repos, GitHub Advanced Security. 
+#
+# PRODUCTION HARDENING:
+#   For real use, pin every third-party action to a full commit SHA instead of a
+#   moving tag (e.g. orcasecurity/shiftleft-iac-action@<sha>) to remove
+#   supply-chain risk. Major tags are used here only for readability.
+#
+# Action docs:
+#   IaC      https://github.com/orcasecurity/shiftleft-iac-action
+#   Secrets  https://github.com/orcasecurity/shiftleft-secrets-action
+#   SAST     https://github.com/orcasecurity/shiftleft-sast-action
+#   SCA/FS   https://github.com/orcasecurity/shiftleft-fs-action
+#   Image    https://github.com/orcasecurity/shiftleft-container-image-action
+# =============================================================================
 
 on:
-  ### UNCOMMENT THIS SECTION TO AUTOBUILD ON ANY PUSH
+  ### Run on demand from the Actions tab (default for a demo)
+  workflow_dispatch:
+  ### UNCOMMENT to scan on every push to main
   #push:
-  #  branches:
-  #    - main
-  ### UNCOMMENT THIS SECTION TO BUILD ON A REGULAR SCHEDULE
+  #  branches: [ main ]
+  ### UNCOMMENT to scan on pull requests targeting main
+  #pull_request:
+  #  branches: [ main ]
+  ### UNCOMMENT to scan on a schedule (here: every 14 days)
   #schedule:
   #  - cron: '38 23 */14 * *'
-  ### UNCOMMENT THIS SECTION TO ENABLE ON-DEMAND BUILDS
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: 'On-Demand AppSec Scan'  
-
+  
+### Least-privilege by default
+permissions:
+  contents: read
+  
 env:
-  REGISTRY: ghcr.io
-  PROJECT_KEY: appsec-demo
+  REGISTRY: ghcr.io           ### if you change this you will probably need to update the build section to handle registry credentials
+  PROJECT_KEY: appsec-demo    ### set to your Orca project key
      
 jobs:
 
+  # ---------------------------------------------------------------------------
+  # IaC scan – misconfigurations in Terraform, Dockerfiles, K8s manifests, etc.
+  # ---------------------------------------------------------------------------
   iac-scan:
     name: Orca IaC Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
     #permissions:
-    #  security-events: write    
+    #  contents: read
+    #  security-events: write
     steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-iac-action  
+      - name: Checkout code
+        uses: actions/checkout@v6
+        
       - name: Run Orca IaC Scan
         id: orcasecurity_iac_scan
         uses: orcasecurity/shiftleft-iac-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### just scan the Dockerfile, or specify "terraform" etc
-          path: "./Dockerfile"
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
+          path: "./Dockerfile"   # e.g. "terraform" or "." for the whole repo
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines          
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+          
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                    
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_iac_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/iac.sarif
-      ### alternatively, if you want to use orca-cli instead of the iac-action:
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative (drop the action steps above and use this instead):
+      #- name: Scan with orca-cli
       #  run: |
-      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin        
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" iac scan --path $(pwd)
+      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" iac scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # Secrets scan – hardcoded credentials, keys, tokens across the repo.
+  # ---------------------------------------------------------------------------
   secrets-scan:
-    name: Orca Secrets Scan  
+    name: Orca Secrets Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
     #permissions:
-    #  security-events: write        
+    #  contents: read
+    #  security-events: write
     steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-secrets-action
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
       - name: Run Orca Secrets Scan
         id: orcasecurity_secrets_scan
         uses: orcasecurity/shiftleft-secrets-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### path . is scanning the entire repository
-          path: "."
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
+          path: "."              # scan the whole repository
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                    
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0
-      ### upload SARIF file for github code scanning
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+          
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                    
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_secrets_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/secrets.sarif
-      ### alternatively, if you want to use orca-cli instead of the secrets-action:
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" secrets scan --path $(pwd)
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" secrets scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # SAST scan – static analysis of your first-party source code.
+  # ---------------------------------------------------------------------------
   sast-scan:
     name: Orca SAST Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
     #permissions:
-    #  security-events: write    
-    steps:            
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-sast-action
+    #  contents: read
+    #  security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
       - name: Run Orca SAST Scan
         id: orcasecurity_sast_scan
         uses: orcasecurity/shiftleft-sast-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### path . is scanning the entire repository
           path: "."
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines          
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                    
           #format: "sarif"
           #output: "results/"
-          #### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                    
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_sast_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/sast.sarif
-      ### alternatively, if you want to use orca-cli instead of the sast-action
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
-      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin            
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sast scan --path $(pwd)
+      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" sast scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # SCA scan – vulnerable open-source dependencies.
+  # The fs-action does SCA + secrets together; secrets is disabled here because
+  # the dedicated secrets-scan job above already covers it.
+  # ---------------------------------------------------------------------------
   sca-scan:
     name: Orca SCA Scan
     runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):    
     #permissions:
-    #  security-events: write    
+    #  contents: read
+    #  security-events: write
     steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-fs-action
-      ### note: the "fs-action" combines SCA and Secrets scanning into one action
-      ### I am disabling secret scan in this job and doing secrets scanning separately
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
       - name: Run Orca SCA Scan
         id: orcasecurity_sca_scan
         uses: orcasecurity/shiftleft-fs-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
-          ### path . is scanning the entire repository
           path: "."
-          ### disable secrets since we're using the secrets-action separately
-          disable_secret: true
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
+          disable_secret: true   # avoid double-reporting with the secrets-scan job
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                              
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
-      ### upload SARIF file for github code scanning
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+          
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                     
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_sca_scan.outputs.exit_code != 1 }}
       #  with:
-      #    sarif_file: results/sca.sarif        
-      ### alternatively, if you want to use orca-cli instead of the sca-action:
-      #- name: "Install Orca cli"
+      #    sarif_file: results/sca.sarif
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" sca scan --path $(pwd)
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" sca scan --path $(pwd)
 
+  # ---------------------------------------------------------------------------
+  # Build the container image and push to GHCR.
+  # You can use your existing image build step(s), but note we do need a way to
+  # capture the image name/tag so we can pass that to the image scan step, so
+  # you may want to look at the outputs: and set_image pieces of this step. 
+  # 
+  # Also note the "needs:" piece of this step, it waits for all of the 
+  # above appsec scans to complete before deciding to go ahead with the build.
+  # 
+  # Because the scans exit 0, this always runs in the demo;
+  # set a scan's exit_code to 3 (this is the default) to make it a real gate.
+  # The image is pushed (not just built) because image-scan runs on a separate
+  # runner and pulls it by reference – don't switch this to push: false.
+  # ---------------------------------------------------------------------------
   build:
     name: Image Build
     runs-on: ubuntu-latest
-    ### make sure *all* of the above appsec scans pass before continuing.
-    needs: [iac-scan,secrets-scan,sast-scan,sca-scan]    
+    timeout-minutes: 20
+    ### make sure *all* of the above appsec tests pass before continuing.
+    needs: [iac-scan, secrets-scan, sast-scan, sca-scan]
     permissions:
-      id-token: write
       contents: read
       packages: write
+      id-token: write
     outputs:
       image: ${{ steps.set_image.outputs.image }}
-    steps:      
-    - name: "Set IMAGE Environmental Variable"
-      id: set_image
-      run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-    - name: "Checkout Code"
-      uses: actions/checkout@v4
-    - name: "Log in to the Container Registry"
-      uses: docker/login-action@v2
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}      
-    - name: "Set up Docker Buildx"
-      uses: docker/setup-buildx-action@v2
-    - name: "Build Local Container"
-      uses: docker/build-push-action@v3
-      with:
-        tags: ${{ steps.set_image.outputs.image }}
-        push: true
-        load: false      
+    steps:
+      - name: "Set IMAGE Environmental Variable"
+        id: set_image
+        run: |
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}"
+          echo "image=${IMAGE,,}" >> "$GITHUB_OUTPUT"                 
+        ### ${IMAGE,,} makes sure it's all lowercase
+ 
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
+      - name: Log in to the Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+ 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+ 
+      - name: Build and push container
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          tags: ${{ steps.set_image.outputs.image }}
+          push: true
 
+  # ---------------------------------------------------------------------------
+  # Scan the built image for OS + package vulnerabilities.
+  # ---------------------------------------------------------------------------
   image-scan:
     name: Orca Container Image Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
+    timeout-minutes: 15
     needs: [build]
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
+    #permissions:
+    #  contents: read
+    #  security-events: write
     steps:
-      ### https://github.com/orcasecurity/shiftleft-container-image-action
       - name: Run Orca Container Image Scan
-        uses: orcasecurity/shiftleft-container-image-action@v1
         id: orcasecurity_container_image_scan
+        uses: orcasecurity/shiftleft-container-image-action@v1
         with:
           api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
           project_key: ${{ env.PROJECT_KEY }}
           image: ${{ needs.build.outputs.image }}
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines                              
           #format: "sarif"
           #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0 
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                     
       #- name: Upload SARIF file
       #  uses: github/codeql-action/upload-sarif@v3
       #  if: ${{ always() && steps.orcasecurity_container_image_scan.outputs.exit_code != 1 }}
       #  with:
       #    sarif_file: results/image.sarif
-      ### alternatively, if you want to use orca-cli instead of the container-image-action:
-      #- name: "Install Orca cli"
+ 
+      ### CLI alternative:
+      #- name: Scan with orca-cli
       #  run: |
       #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
-      #- name: "Scan Image"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" image scan ${IMAGE}
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" image scan ${{ needs.build.outputs.image }}
+      
