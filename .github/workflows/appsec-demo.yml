@@ -65,25 +65,6 @@ env:
      
 jobs:
 
-  iac-scan:
-    name: Orca IaC Scan
-    runs-on: ubuntu-latest
-    ### if you want to write out a SARIF file to upload to github code scanning, uncomment this:
-    #permissions:
-    #  security-events: write    
-    steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v4
-      ### https://github.com/orcasecurity/shiftleft-iac-action  
-      - name: Run Orca IaC Scan
-        id: orcasecurity_iac_scan
-        uses: orcasecurity/shiftleft-iac-action@v1
-        with:
-          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
-          project_key: ${{ env.PROJECT_KEY }}
-          ### just scan the Dockerfile, or specify "terraform" etc
-          path: "./Dockerfile"
-          ### if you want to write out a SARIF file to upload to github code scanning, uncomment the next two lines
           #format: "sarif"
           #output: "results/"
           ### exit code 0 means this stage will pass regardless of policy violations
@@ -100,6 +81,47 @@ jobs:
       #- name: "Scan Repo"
       #  run: |
       #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" iac scan --path $(pwd)
+
+  # ---------------------------------------------------------------------------
+  # IaC scan – misconfigurations in Terraform, Dockerfiles, K8s manifests, etc.
+  # ---------------------------------------------------------------------------
+  iac-scan:
+    name: Orca IaC Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    ### Uncomment to upload findings to the GitHub Security tab (needs GHAS on private repos):
+    #permissions:
+    #  contents: read
+    #  security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+ 
+      - name: Run Orca IaC Scan
+        id: orcasecurity_iac_scan
+        uses: orcasecurity/shiftleft-iac-action@v1
+        with:
+          api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+          project_key: ${{ env.PROJECT_KEY }}
+          path: "./Dockerfile"   # e.g. "terraform" or "." for the whole repo
+          ### if you want to upload findings to the GitHub Security tab, uncomment the next two lines          
+          #format: "sarif"
+          #output: "results/"
+          exit_code: 0           # 0 = report only; set to 3 to fail the build on policy violations
+      ### if you want to upload findings to the GitHub Security tab, uncomment this step:                    
+      #- name: Upload SARIF file
+      #  uses: github/codeql-action/upload-sarif@v3
+      #  if: ${{ always() && steps.orcasecurity_iac_scan.outputs.exit_code != 1 }}
+      #  with:
+      #    sarif_file: results/iac.sarif
+ 
+      ### CLI alternative (drop the action steps above and use this instead):
+      #- name: Scan with orca-cli
+      #  run: |
+      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin
+      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${{ secrets.ORCA_SECURITY_API_TOKEN }}" iac scan --path $(pwd)
+
+
 
   secrets-scan:
     name: Orca Secrets Scan  
