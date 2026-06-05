@@ -65,23 +65,6 @@ env:
      
 jobs:
 
-          #format: "sarif"
-          #output: "results/"
-          ### exit code 0 means this stage will pass regardless of policy violations
-          exit_code: 0
-      #- name: Upload SARIF file
-      #  uses: github/codeql-action/upload-sarif@v3
-      #  if: ${{ always() && steps.orcasecurity_iac_scan.outputs.exit_code != 1 }}
-      #  with:
-      #    sarif_file: results/iac.sarif
-      ### alternatively, if you want to use orca-cli instead of the iac-action:
-      #- name: "Install Orca cli"
-      #  run: |
-      #    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ~/.local/bin        
-      #- name: "Scan Repo"
-      #  run: |
-      #    ~/.local/bin/orca-cli --exit-code 0 -p "${PROJECT_KEY}" --api-token "${ORCA_SECURITY_API_TOKEN}" iac scan --path $(pwd)
-
   # ---------------------------------------------------------------------------
   # IaC scan – misconfigurations in Terraform, Dockerfiles, K8s manifests, etc.
   # ---------------------------------------------------------------------------
