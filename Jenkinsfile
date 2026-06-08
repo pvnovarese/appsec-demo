@@ -89,7 +89,7 @@ pipeline {
                             'Orca Secrets Scan': {
                                 sh '''
                                     ls -al
-                                    echo "cat shell.env ---------------------------------------""
+                                    echo "cat shell.env ---------------------------------------"
                                     cat shell.env
                                     echo "cat pipe.env ---------------------------------------"
                                     cat pipe.env
