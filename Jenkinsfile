@@ -85,8 +85,16 @@ pipeline {
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
                             // seems to be a viable workaround for now.  Bug seems to still exist in 1.107.0
                             //------------------------------------------------------------------------------
+                            // debug steps added to see what this shell.env file is
                             'Orca Secrets Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
+                                sh '''
+                                    ls -al
+                                    echo "cat shell.env ---------------------------------------""
+                                    cat shell.env
+                                    echo "cat pipe.env ---------------------------------------"
+                                    cat pipe.env
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan
+                                '''
                             },
 
                             'Orca SAST Scan': {
