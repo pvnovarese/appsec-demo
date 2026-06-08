@@ -55,9 +55,9 @@ pipeline {
                 // orca-cli docs: https://docs.orcasecurity.io/docs/orca-cli
                 //
                 // to do: add a check so we skip the download if it's already available (need to check the version)
-                sh '''
-                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
-                '''
+                //sh '''
+                //    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
+                //'''
             } // end steps
         } // end stage Setup
         //
@@ -93,7 +93,7 @@ pipeline {
                                     cat shell.env || true
                                     echo "cat pipe.env ---------------------------------------"
                                     cat pipe.env || true
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --debug secrets scan --disable-git-scan
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --debug secrets scan 
                                     ls -alR
                                     echo "cat shell.env ---------------------------------------"
                                     cat shell.env || true
