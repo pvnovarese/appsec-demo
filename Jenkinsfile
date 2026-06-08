@@ -45,7 +45,7 @@ pipeline {
         stage('Setup') {
             steps {
                 // Clean before build
-                cleanWs()
+                //cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
                 // install orca-cli 
@@ -129,7 +129,7 @@ pipeline {
         stage('Build') {
             steps {
                 // Clean before build (if we're doing any debug in the AppSec stage we should comment this out)
-                cleanWs()
+                //cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
                 // get the docker-hub credential (or whatever username/password credential for whatever registry)
