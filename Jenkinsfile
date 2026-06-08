@@ -90,9 +90,9 @@ pipeline {
                                 sh '''
                                     ls -al
                                     echo "cat shell.env ---------------------------------------"
-                                    cat shell.env
+                                    cat shell.env || true
                                     echo "cat pipe.env ---------------------------------------"
-                                    cat pipe.env
+                                    cat pipe.env || true
                                     ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan
                                 '''
                             },
