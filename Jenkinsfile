@@ -88,12 +88,17 @@ pipeline {
                             // debug steps added to see what this shell.env file is
                             'Orca Secrets Scan': {
                                 sh '''
-                                    ls -al
+                                    ls -alR
                                     echo "cat shell.env ---------------------------------------"
                                     cat shell.env || true
                                     echo "cat pipe.env ---------------------------------------"
                                     cat pipe.env || true
                                     ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan
+                                    ls -alR
+                                    echo "cat shell.env ---------------------------------------"
+                                    cat shell.env || true
+                                    echo "cat pipe.env ---------------------------------------"
+                                    cat pipe.env || true
                                 '''
                             },
 
