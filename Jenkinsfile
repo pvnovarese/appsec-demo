@@ -180,7 +180,10 @@ pipeline {
     post {
         always {
             // Clean up Docker login credentials from the agent
-            sh 'docker logout ${REGISTRY} || true'
+            sh '''
+                docker image rm ${IMAGE} || true
+                docker logout ${REGISTRY} || true
+            '''
             //
             // thought about doing a cleanWs() here but I like leaving the workspace as-is so I can investigate if needed
             //
