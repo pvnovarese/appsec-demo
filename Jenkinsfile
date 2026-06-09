@@ -93,7 +93,7 @@ pipeline {
                                     cat shell.env || true
                                     echo "cat pipe.env ---------------------------------------"
                                     cat pipe.env || true
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --debug secrets scan 
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --debug secrets scan --disable-git-scan
                                     ls -alR
                                     echo "cat shell.env ---------------------------------------"
                                     cat shell.env || true
