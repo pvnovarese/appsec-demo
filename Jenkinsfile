@@ -45,7 +45,7 @@ pipeline {
         stage('Setup') {
             steps {
                 // Clean before build
-                cleanWs()
+                //cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
                 // install orca-cli 
@@ -55,9 +55,9 @@ pipeline {
                 // orca-cli docs: https://docs.orcasecurity.io/docs/orca-cli
                 //
                 // to do: add a check so we skip the download if it's already available (need to check the version)
-                sh '''
-                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
-                '''
+                //sh '''
+                //    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
+                //'''
             } // end steps
         } // end stage Setup
         //
@@ -85,8 +85,21 @@ pipeline {
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
                             // seems to be a viable workaround for now.  Bug seems to still exist in 1.107.0
                             //------------------------------------------------------------------------------
+                            // debug steps added to see what this shell.env file is
                             'Orca Secrets Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
+                                sh '''
+                                    ls -alR
+                                    echo "cat shell.env ---------------------------------------"
+                                    cat shell.env || true
+                                    echo "cat pipe.env ---------------------------------------"
+                                    cat pipe.env || true
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" --debug secrets scan --disable-git-scan
+                                    ls -alR
+                                    echo "cat shell.env ---------------------------------------"
+                                    cat shell.env || true
+                                    echo "cat pipe.env ---------------------------------------"
+                                    cat pipe.env || true
+                                '''
                             },
 
                             'Orca SAST Scan': {
@@ -116,7 +129,7 @@ pipeline {
         stage('Build') {
             steps {
                 // Clean before build (if we're doing any debug in the AppSec stage we should comment this out)
-                cleanWs()
+                //cleanWs()
                 // We need to explicitly checkout from SCM here
                 checkout scm
                 // get the docker-hub credential (or whatever username/password credential for whatever registry)
@@ -132,9 +145,12 @@ pipeline {
                     } // end script
                     // log in to registry, // set up buildx, // Build and push the image
                     sh '''
+                        ls -alR
                         echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
                         docker buildx inspect --bootstrap
+                        ls -alR
                         docker buildx build --push --tag ${IMAGE} .
+                        ls -alR
                     '''
                 } // end withCredentials
             } //end steps
@@ -167,7 +183,10 @@ pipeline {
     post {
         always {
             // Clean up Docker login credentials from the agent
-            sh 'docker logout ${REGISTRY} || true'
+            sh '''
+                docker image rm ${IMAGE} || true
+                docker logout ${REGISTRY} || true
+            '''
             //
             // thought about doing a cleanWs() here but I like leaving the workspace as-is so I can investigate if needed
             //
