@@ -19,6 +19,7 @@ const DATABASE_PASSWORD = 'super_secret_password_123';
 const API_KEY = 'sk-1234567890abcdef';
 const JWT_SECRET = 'my-secret-key';
 const GH_TOKEN = 'ghp_vUwTt3jIoIOqzIrAcJNZGcWs4GvimD3msfzz';
+const ORCA_TOKEN = 'aHR0cHM6Ly9hcHAudXMub3JjYXNlY3VyaXR5LmlvfHxGNFp1NWMyazZ2bG5xZW9JdlFwRUxVS3kxRzYEXPIRED==';
 const AWS_ACCESS_KEY = 'AKIAIOSFODNN7EXAMPLE';
 const AWS_SECRET_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
 
