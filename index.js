@@ -20,7 +20,7 @@ const API_KEY = 'sk-1234567890abcdef';
 const JWT_SECRET = 'my-secret-key';
 // this token is live as of 2026-06-18 but has a 7-day expiration, it has no actual privledges so it should be 
 // picked up by orca secret scan and trigger the token rotation mission feature (hopefully)
-const GH_TOKEN = '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';
+const GH_TOKEN = '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';
 const ORCA_TOKEN = 'aHR0cHM6Ly9hcHAudXMub3JjYXNlY3VyaXR5LmlvfHxGNFp1NWMyazZ2bG5xZW9JdlFwRUxVS3kxRzYEXPIRED==';
 const AWS_ACCESS_KEY = 'AKIAIOSFODNN7EXAMPLE';
 const AWS_SECRET_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
