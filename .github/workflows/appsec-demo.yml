@@ -122,9 +122,9 @@ jobs:
 
       ### if I put the token in the repo directly, github instantly revokes it
       ### we need a valid secret to enable the mission feature
-      - name: Inject secret
-        run: |
-          curl https://novarese.net/token.txt > token.txt
+      #- name: Inject secret
+      #  run: |
+      #    curl https://example.com/token.txt > token.txt
  
       - name: Run Orca Secrets Scan
         id: orcasecurity_secrets_scan
