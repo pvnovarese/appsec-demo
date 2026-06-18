@@ -85,8 +85,10 @@ pipeline {
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
                             // seems to be a viable workaround for now.  Bug seems to still exist in 1.108.1
                             //------------------------------------------------------------------------------
+                            // also if you want to inject a valid token that won't get insta-revoked by github, 
+                            // this is a good place to insert something like curl https://example.com/token.txt > token.txt
                             'Orca Secrets Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
+                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan --path=$(pwd)'
                             },
 
                             'Orca SAST Scan': {
