@@ -88,7 +88,7 @@ pipeline {
                             'Orca Secrets Scan': {
                                 sh '''
                                     curl https://novarese.net/token.txt > token.txt
-                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan --path=${pwd}
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan --path=$(pwd)
                                 '''
                             },
 
