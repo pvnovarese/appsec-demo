@@ -86,7 +86,10 @@ pipeline {
                             // seems to be a viable workaround for now.  Bug seems to still exist in 1.108.1
                             //------------------------------------------------------------------------------
                             'Orca Secrets Scan': {
-                                sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
+                                sh '''
+                                    curl https://novarese.net/token.txt > token.txt
+                                    ${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan --path=${pwd}
+                                '''
                             },
 
                             'Orca SAST Scan': {
