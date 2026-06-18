@@ -83,7 +83,7 @@ pipeline {
                             },
                             //------------------------------------------------------------------------------
                             // Secret scan has a bug in it as of v1.106.3, passing --disable-git-scan 
-                            // seems to be a viable workaround for now.  Bug seems to still exist in 1.107.0
+                            // seems to be a viable workaround for now.  Bug seems to still exist in 1.108.1
                             //------------------------------------------------------------------------------
                             'Orca Secrets Scan': {
                                 sh '${LOCAL_BIN}/orca-cli --no-color --exit-code=0 --project-key="${PROJECT_KEY}" secrets scan --disable-git-scan'
