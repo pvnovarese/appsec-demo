@@ -56,7 +56,7 @@ pipeline {
                 //
                 // to do: add a check so we skip the download if it's already available (need to check the version)
                 sh '''
-                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.107.0
+                    curl -sfL 'https://raw.githubusercontent.com/orcasecurity/orca-cli/main/install.sh' | bash -s -- -b ${LOCAL_BIN} 1.108.1
                 '''
             } // end steps
         } // end stage Setup
