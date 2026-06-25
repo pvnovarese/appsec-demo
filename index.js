@@ -24,6 +24,9 @@ const GH_TOKEN = 'github_pat_11ADDS7KQ0jnoX4mKrfg9y_Y9FkldEOTnZkNvRXbRMv8WpLgbSM
 const ORCA_TOKEN = 'aHR0cHM6Ly9hcHAudXMub3JjYXNlY3VyaXR5LmlvfHxGNFp1NWMyazZ2bG5xZW9JdlFwRUxVS3kxRzYEXPIRED==';
 const AWS_ACCESS_KEY = 'AKIAIOSFODNN7EXAMPLE';
 const AWS_SECRET_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
+// the following secret should be ignored
+// orca-secrets ignore-line
+const AWS_ACCESS_KEY_2 = AKIA6GBMEL9GUYBAI1ME
 
 // VULNERABILITY 2: Weak cryptographic algorithm (CWE-327)
 function hashPassword(password) {
