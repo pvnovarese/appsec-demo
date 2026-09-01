@@ -66,11 +66,22 @@ app.get('/file', (req, res) => {
     });
 });
 
-// VULNERABILITY 6: Cross-Site Scripting (XSS) (CWE-79)
+// Helper: escape HTML special characters to prevent XSS
+function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
+// VULNERABILITY 6: Cross-Site Scripting (XSS) (CWE-79) - FIXED
 app.get('/welcome', (req, res) => {
     const name = req.query.name;
-    // Vulnerable: user input rendered without sanitization
-    res.send(`<h1>Welcome ${name}!</h1>`);
+    // Fixed: HTML-encode user input before rendering in response
+    res.send(`<h1>Welcome ${escapeHtml(name)}!</h1>`);
 });
 
 // VULNERABILITY 7: Insecure Random Number Generation (CWE-338)
@@ -120,8 +131,7 @@ log(chalk.magenta('Debug and chalk work great together!'));
 // VULNERABILITY 11: Insecure server configuration
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(chalk.cyan(`\n✓ Server running on http://0.0.0.0:${PORT}`));
-    console.log(chalk.yellow(`Database password: ${DATABASE_PASSWORD}`)); // Vulnerable: logging secrets
+    console.log(chalk.cyan(`\n✓ Server running on http://0.0.0.0:${PORT}`));\n    console.log(chalk.yellow(`Database password: ${DATABASE_PASSWORD}`)); // Vulnerable: logging secrets
     console.log(chalk.yellow(`API Key: ${API_KEY}`));
 });
 
